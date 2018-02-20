@@ -1,39 +1,40 @@
-/* Overland Flow Sensor Software 
- * Version 0.1
+
+/* Overland Flow Sensor Calibration Table
  * 
  * This software collects range data from two IR sensors and provides
- * latitude, longitude, and datetime information. The data is saved on 
- * a micro-SD card with datetime formated for SQL.
+ * ranging data on a linear stage
  * 
  * The minimum range of the IR sensor is 4 cm and maximum range is ~20cm.
- * Analog range values are converted to distance by the lookup table values
- * with the key:value pair is array index is the analog voltage, and the 
- * array value is the calibrated distance. The lookup tables are stored in 
- * the program memory of the Arduino.
+ * For use with a linear stage and stepper motor control
  */
+#include<math.h>
 
 //IR sensor analog pins
 #define irSensorPin0   A0  
 #define irSensorPin1   A2 
+#define ranging 100 //mm
+
 int irSensor0=0;
 int irSensor1=0;
 bool flag = false;
+double sensor1 = 0.0;
+double sensor2 = 0.0;
 
 // Calibration table motor control
 int PUL=7; //define Pulse pin
 int DIR=6; //define Direction pin
 int ENA=5; //define Enable Pin
 
-//button switch 
+//button switch on calibration table
 const int buttonPin=4;     // the number of the pushbutton pin
 bool buttonState=0;         // variable for reading the pushbutton status\\
 
+//Sensor array table
+int Sensor0[ranging] = {}; 
+int Sensor1[ranging] = {};
 
-//Sensor lookup Table
-int Sensor0[50] = {}; 
-int Sensor1[50] = {};
 
-
+//linear stage functions
 void driveForward(){
      for (int i=0; i<800; i++)    //Forward 1 mm
      {
@@ -70,6 +71,7 @@ void driveStop(){
      }
 }
 
+//Set stage to button position
 void setStage(){
   while(buttonState==LOW){
      driveReverse();
@@ -90,22 +92,33 @@ void setup() {
   setStage(); //intitialize stage
 }
 
-int count = 0;
+//loop counters
+int count= 0;
+int countR= 0;
 
 void loop() {  
-  
-  while( count < 50){
+  while( count < ranging){
     driveForward();
     irSensor0 = analogRead(irSensorPin0);
     irSensor1 = analogRead(irSensorPin1);
-
     Sensor0[count] = irSensor0;
     Sensor1[count] = irSensor1;
+   //range test 
+   /*sensor1=30772*pow(irSensor0,-1.039)+4;
+   sensor2=23522*pow(irSensor1,-0.973);
+   Serial.print((sensor1));
+   Serial.print(",");
+   Serial.print((sensor2));
+   Serial.print(",");
+   Serial.println(((sensor1+sensor2)/2));*/
     delay(750);
     count++;
   }
- if((count==50)&&(flag == false)){
-  for(int i=0; i<50; i++){
+
+/*print sensor arrays data captured at 1mm */ 
+ if((count==ranging)&&(flag == false)){
+  for(int i=0; i<ranging; i++){
+    Serial.println("Done!");
     Serial.print(Sensor0[i]);
     Serial.print(",");
     Serial.println(Sensor1[i]); 
